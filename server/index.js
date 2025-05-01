@@ -18,28 +18,19 @@ const emailToSocketIdMap = new Map();
 const socketIdToEmailMap = new Map();
 
 io.on("connection", (socket) => {
-  console.log(`Socket Connected`, socket.id);
+  console.log(`Socket Connected: ${socket.id}`);
 
   socket.on("room:join", (data) => {
     const { email, room } = data;
     emailToSocketIdMap.set(email, socket.id);
     socketIdToEmailMap.set(socket.id, email);
 
-    // if any user already there in room then other will join in and this user:joined event will be emit so that everyone in that room comes to knows that someone has joined
-    io.to(room).emit("user:joined", { email, id: socket.id });
-
-    // join that person
     socket.join(room);
-
-    //server send this emit event to this particualar (to) person(socket.id)
+    io.to(room).emit("user:joined", { email, id: socket.id });
     io.to(socket.id).emit("room:join", data);
   });
 
   socket.on("user:call", ({ toUser, offer }) => {
-    // console.log("user:call", toUser, " ", offer);
-
-    // send the offer of the user who call to the user whom to be called
-    // socket.id is current user
     io.to(toUser).emit("incoming:call", { from: socket.id, offer });
   });
 
@@ -48,7 +39,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("peer:candidate", ({ candidate, to }) => {
-    console.log("candidate", { candidate, to });
     io.to(to).emit("peer:candidate", { candidate });
   });
 
@@ -58,5 +48,12 @@ io.on("connection", (socket) => {
 
   socket.on("peer:nego:done", ({ to, ans }) => {
     io.to(to).emit("peer:nego:final", { from: socket.id, ans });
+  });
+
+  socket.on("disconnect", () => {
+    const email = socketIdToEmailMap.get(socket.id);
+    emailToSocketIdMap.delete(email);
+    socketIdToEmailMap.delete(socket.id);
+    console.log(`Socket Disconnected: ${socket.id}`);
   });
 });

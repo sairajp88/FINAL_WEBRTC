@@ -45,8 +45,6 @@ class PeerServices {
       }
     };
 
-
-    // singleton Implementatoin: If class instance already exists .. return that same instance, ensuring shared state across its usage
     PeerServices.instance = this;
   }
 
@@ -59,14 +57,12 @@ class PeerServices {
   }
 
   sendFile(file) {
-    // Step 1: Send metadata first
     const metadata = JSON.stringify({
       fileName: file.name,
       fileSize: file.size,
     });
     this.fileChannel.send(metadata);
 
-    // Step 2: Send file data in chunks
     const chunkSize = 16 * 1024;
     let offset = 0;
 
