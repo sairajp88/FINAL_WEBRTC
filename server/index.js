@@ -5,7 +5,7 @@ dotenv.config();
 const io = new Server(process.env.PORT, {
   cors: {
     origin: [
-      "https://final-webrtc-server-1.onrender.com",
+      "https://final-webrtc-static.onrender.com",
       "http://localhost:3000",
     ],
     methods: ["GET", "POST"],
