@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useSocket } from "../context/SocketProvider";
 import PeerServices from "../services/Peer"; // Import as a class
+import { useParams } from "react-router-dom";
 
 const RoomPage = () => {
+  const { roomID } = useParams(); // Get room ID from URL
   const socket = useSocket();
   const [remoteSocketId, setRemoteSocketId] = useState(null);
   const [videoEnable, setVideoEnabled] = useState(true);
@@ -25,9 +27,7 @@ const RoomPage = () => {
   };
 
   const handleReceivedFile = useCallback((data) => {
-    // Check if data is a string (metadata) or ArrayBuffer (file data)
     if (typeof data === "string") {
-      // Attempt to parse it as JSON metadata
       try {
         const metadata = JSON.parse(data);
         if (metadata.fileName && metadata.fileSize) {
@@ -38,8 +38,8 @@ const RoomPage = () => {
               name: metadata.fileName,
               size: metadata.fileSize,
               receivedData: [],
-              receivedSize: 0, // Track received bytes
-              progress: 0, // Track progress percentage
+              receivedSize: 0,
+              progress: 0,
             },
           ]);
           return;
@@ -48,17 +48,14 @@ const RoomPage = () => {
         console.error("Failed to parse metadata:", e);
       }
     } else if (data instanceof ArrayBuffer) {
-      // Add binary data (file chunk) to the last file entry in receivedFiles
       setReceivedFiles((prev) => {
         const lastFileIndex = prev.length - 1;
         if (lastFileIndex >= 0) {
           const updatedFiles = [...prev];
           const lastFile = { ...updatedFiles[lastFileIndex] };
 
-          // Add the new chunk
           lastFile.receivedData.push(data);
 
-          // Update received size and progress
           const chunkSize = data.byteLength;
           lastFile.receivedSize = (lastFile.receivedSize || 0) + chunkSize;
           lastFile.progress = Math.round(
@@ -81,7 +78,6 @@ const RoomPage = () => {
     };
   }, [receivedFiles]);
 
-  // Handle file sending progress
   const handleFileSendProgress = useCallback(
     (fileName, sentBytes, totalBytes) => {
       setSendingFiles((prev) => {
@@ -111,7 +107,6 @@ const RoomPage = () => {
     []
   );
 
-  // Instantiate PeerServices with the callbacks
   const [peer] = useState(
     new PeerServices(
       handleReceivedMessage,
@@ -294,7 +289,6 @@ const RoomPage = () => {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Add the file to sending files list with initial progress of 0%
       setSendingFiles((prev) => [
         ...prev,
         {
@@ -309,7 +303,6 @@ const RoomPage = () => {
     }
   };
 
-  // Progress bar component
   const ProgressBar = ({ progress }) => {
     return (
       <div
@@ -318,7 +311,8 @@ const RoomPage = () => {
           backgroundColor: "#e0e0e0",
           borderRadius: "4px",
           margin: "5px 0",
-        }}>
+        }}
+      >
         <div
           style={{
             height: "10px",
@@ -516,12 +510,10 @@ const RoomPage = () => {
         <div>
           <h3>Received Files</h3>
           {receivedFiles.map((file, index) => {
-            // Create file URL for completed transfers
             let fileUrl = file.url;
             if (!fileUrl && file.receivedData && file.progress === 100) {
               const fileBlob = new Blob(file.receivedData);
               fileUrl = URL.createObjectURL(fileBlob);
-              // Update the file object with the URL
               setReceivedFiles((prev) => {
                 const updated = [...prev];
                 updated[index] = { ...updated[index], url: fileUrl };

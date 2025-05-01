@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useSocket } from "../context/SocketProvider";
-import PeerServices from "../services/Peer"; // Import as a class
+import { useNavigate } from "react-router-dom";
 
 const LobbyScreen = () => {
   const socket = useSocket();
+  const navigate = useNavigate(); // React Router's navigation hook
   const [email, setEmail] = useState("");
   const [room, setRoom] = useState("");
 
@@ -15,17 +16,21 @@ const LobbyScreen = () => {
     [email, room, socket]
   );
 
-  useEffect(() => {
-    const handleJoin = (data) => {
+  const handleJoin = useCallback(
+    (data) => {
       console.log("Joined room:", data);
-    };
+      navigate(`/room/${data.room}`); // Redirect to the room page
+    },
+    [navigate]
+  );
 
+  useEffect(() => {
     socket.on("room:join", handleJoin);
 
     return () => {
       socket.off("room:join", handleJoin);
     };
-  }, [socket]);
+  }, [socket, handleJoin]);
 
   return (
     <div
